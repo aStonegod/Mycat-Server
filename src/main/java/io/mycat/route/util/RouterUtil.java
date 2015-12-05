@@ -457,6 +457,38 @@ public class RouterUtil {
 		}
 	}
 
+    public static int[] getCreateIndexPos(String upStmt, int start) {
+        String token1 = "CREATE ";
+        String token2 = " INDEX ";
+        String token3 = " ON ";
+        int createInd = upStmt.indexOf(token1, start);
+        int idxInd = upStmt.indexOf(token2, start);
+        int onInd = upStmt.indexOf(token3, start);
+        // 既包含CREATE又包含INDEX，且CREATE关键字在INDEX关键字之前, 且包含ON...
+        if (createInd >= 0 && idxInd > 0 && idxInd > createInd && onInd > 0 && onInd > idxInd) {
+            return new int[] {onInd , token3.length() };
+        } else {
+            return new int[] { -1, token2.length() };// 不满足条件时，只关注第一个返回值为-1，第二个任意
+        }
+    }
+
+    public static int[] getDropIndexPos(String upStmt, int start) {
+        String token1 = "DROP ";
+        String token2 = " INDEX ";
+        String token3 = " ON ";
+        int createInd = upStmt.indexOf(token1, start);
+        int idxInd = upStmt.indexOf(token2, start);
+        int onInd = upStmt.indexOf(token3, start);
+        // 既包含CREATE又包含INDEX，且CREATE关键字在INDEX关键字之前, 且包含ON...
+        if (createInd >= 0 && idxInd > 0 && idxInd > createInd && onInd > 0 && onInd > idxInd) {
+            return new int[] {onInd , token3.length() };
+        } else {
+            return new int[] { -1, token2.length() };// 不满足条件时，只关注第一个返回值为-1，第二个任意
+        }
+    }
+
+
+
     /**
      * 修复DDL路由
      *
@@ -464,21 +496,25 @@ public class RouterUtil {
      * @author aStoneGod
      */
     public static RouteResultset routeToDDLNode(RouteResultset rrs, int sqlType, String stmt,SchemaConfig schema) throws SQLSyntaxErrorException {
-    	//检查表是否在配置文件中
-		stmt = getFixedSql(stmt);
-		String tablename = "";		
-		final String upStmt = stmt.toUpperCase();
-		if(upStmt.startsWith("CREATE")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateTablePos(upStmt, 0));
-		}else if(upStmt.startsWith("DROP")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropTablePos(upStmt, 0));
-		}else if(upStmt.startsWith("ALTER")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getAlterTablePos(upStmt, 0));
-		}else if (upStmt.startsWith("TRUNCATE")){
-			tablename = RouterUtil.getTableName(stmt, RouterUtil.getTruncateTablePos(upStmt, 0));
-		}
-		tablename = tablename.toUpperCase();
-        
+        //检查表是否在配置文件中
+        stmt = getFixedSql(stmt);
+        String tablename = "";
+        final String upStmt = stmt.toUpperCase();
+        if(upStmt.startsWith("CREATE")){
+            if (upStmt.contains("INDEX")){
+                tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateIndexPos(upStmt, 0));
+            }else tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateTablePos(upStmt, 0));
+        }else if(upStmt.startsWith("DROP")){
+            if (upStmt.contains("INDEX")){
+                tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropIndexPos(upStmt, 0));
+            }else tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropTablePos(upStmt, 0));
+        }else if(upStmt.startsWith("ALTER")){
+            tablename = RouterUtil.getTableName(stmt, RouterUtil.getAlterTablePos(upStmt, 0));
+        }else if (upStmt.startsWith("TRUNCATE")){
+            tablename = RouterUtil.getTableName(stmt, RouterUtil.getTruncateTablePos(upStmt, 0));
+        }
+        tablename = tablename.toUpperCase();
+
         if (schema.getTables().containsKey(tablename)){
             if(ServerParse.DDL==sqlType){
                 List<String> dataNodes = new ArrayList<>();
@@ -504,7 +540,7 @@ public class RouterUtil {
             rrs.setNodes(nodes);
             return rrs;
         }
-        //不在，返回null
+        //both tablename and defaultnode null
         LOGGER.error("table not in schema----"+tablename);
         throw new SQLSyntaxErrorException("op table not in schema----"+tablename);
     }
