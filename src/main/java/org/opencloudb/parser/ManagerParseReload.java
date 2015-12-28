@@ -36,7 +36,9 @@ public final class ManagerParseReload {
     public static final int USER = 3;
     public static final int USER_STAT = 4;
     public static final int CONFIG_ALL = 5;
-
+    public static final int SQL_SLOW = 6;
+    public static final int QUERY_CF = 7;
+    
     public static int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
@@ -69,6 +71,12 @@ public final class ManagerParseReload {
                 case 'U':
                 case 'u':
                     return reload2UCheck(stmt, offset);
+                case 'S':
+                case 's':
+                    return reload2SCheck(stmt, offset);       
+                case 'Q':
+                case 'q':
+                    return reload2QCheck(stmt, offset);     
                 default:
                     return OTHER;
                 }
@@ -158,6 +166,45 @@ public final class ManagerParseReload {
         return OTHER;
     }
     
+    // RELOAD @@SQL
+    static int reload2SCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);           
+            if ((c1 == 'Q' || c1 == 'q') && (c2 == 'L' || c2 == 'l') && (c3 == 's' || c3 == 'S')
+                    && (c4 == 'L' || c4 == 'l') && (c5 == 'O' || c5 == 'o') && (c6 == 'W' || c6 == 'w') ) {
+                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+                    return SQL_SLOW ;
+                }
+                return OTHER;
+            }
+        }
+        return OTHER;
+    }
+    
+    // RELOAD @@QUERY
+    static int reload2QCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);  
+            char c7 = stmt.charAt(++offset);
 
-
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')
+                    && (c4 == 'Y' || c4 == 'y') && (c5 == '_' ) && (c6 == 'C' || c6 == 'c') && (c7 == 'F' || c7 == 'f') ) {
+                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
+                    return QUERY_CF ;
+                }
+                return OTHER;
+            }
+        }
+        return OTHER;
+    }
 }
