@@ -121,11 +121,11 @@ public class RouterUtil {
 		String tablename = "";		
 		final String upStmt = stmt.toUpperCase();
 		if(upStmt.startsWith("CREATE")){
-			if (upStmt.contains("INDEX")){
+			if (upStmt.contains("CREATE INDEX ")){
 				tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateIndexPos(upStmt, 0));
 			}else tablename = RouterUtil.getTableName(stmt, RouterUtil.getCreateTablePos(upStmt, 0));
 		}else if(upStmt.startsWith("DROP")){
-			if (upStmt.contains("INDEX")){
+			if (upStmt.contains("DROP INDEX ")){
 				tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropIndexPos(upStmt, 0));
 			}else tablename = RouterUtil.getTableName(stmt, RouterUtil.getDropTablePos(upStmt, 0));
 		}else if(upStmt.startsWith("ALTER")){
@@ -173,8 +173,6 @@ public class RouterUtil {
 	 * @author AStoneGod
 	 */
 	public static String getFixedSql(String stmt){
-		if (stmt.endsWith(";"))
-			stmt = stmt.substring(0,stmt.length()-2);
 		stmt = stmt.replaceAll("\r\n", " "); //对于\r\n的字符 用 空格处理 rainbow
 		return stmt = stmt.trim(); //.toUpperCase();    
 	}
@@ -1101,7 +1099,8 @@ public class RouterUtil {
 	 * @return
 	 */
 	public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) {
-		
+		// Table名字被转化为大写的，存储在schema
+		tableName = tableName.toUpperCase();
 		if (schemaConfig.isNoSharding()) {
 			return true;
 		}
